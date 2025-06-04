@@ -7,7 +7,7 @@ interface MenuPageProps {
   setCurrentPage: (page: string) => void;
 }
 
-const MenuPage: React.FC<MenuPageProps> = ({ currentStudent, setCurrentStudent, setCurrentPage }) => {
+const MenuPage = ({ currentStudent, setCurrentStudent, setCurrentPage }: MenuPageProps) => {
     const menuItems = [
       { id: 'outing-register', title: '외출 신청', icon: '🚶‍♂️', label: '걷는 사람', color: 'primary' },
       { id: 'outing-return', title: '외출 복귀', icon: '🏠', label: '집', color: 'success' },

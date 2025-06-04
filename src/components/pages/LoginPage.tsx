@@ -14,7 +14,7 @@ interface StudentNameResponse {
   Pwd: string;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ setCurrentStudent, setCurrentPage }) => {
+const LoginPage = ({ setCurrentStudent, setCurrentPage }: LoginPageProps) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -36,6 +36,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ setCurrentStudent, setCurrentPage
               'Accept': 'application/json'
             }
           });
+
+          alert(response.data.Student_Name);
           
           setStudentName(response.data.Student_Name);
           setStudentInfo(response.data);
