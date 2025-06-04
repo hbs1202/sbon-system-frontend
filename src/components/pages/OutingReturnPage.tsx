@@ -5,6 +5,7 @@ import axios from 'axios';
 // API 엔드포인트 설정
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://port-0-sbon-system-backend-mbhiy4va1af0e6e0.sel4.cloudtype.app';
 
+
 interface OutingReturnResponse {
   message: string;
   data: {
