@@ -30,15 +30,13 @@ const LoginPage = ({ setCurrentStudent, setCurrentPage }: LoginPageProps) => {
         setLoading(true);
         try {
           const apiUrl = `${process.env.REACT_APP_API_URL || 'https://port-0-sbon-system-backend-mbhiy4va1af0e6e0.sel4.cloudtype.app'}/api/student/name/${formattedValue}`;
-          const response = await axios.get<StudentNameResponse>(apiUrl, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
+          const response = await axios.get<StudentNameResponse>(apiUrl);
+
+          
+
 
           alert(response.data.Student_Name);
-          
+
           setStudentName(response.data.Student_Name);
           setStudentInfo(response.data);
         } catch (error: unknown) {
