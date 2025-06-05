@@ -20,6 +20,10 @@ const StayReturnPage: React.FC<StayReturnPageProps> = ({
     const [selectedRequest, setSelectedRequest] = useState<StayRequest | null>(null);
     const [returnType, setReturnType] = useState('NORMAL');
     const [returnNote, setReturnNote] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [loading, setLoading] = useState(false);
 
     // 외박 목록 가져오기
     useEffect(() => {
@@ -72,6 +76,7 @@ const StayReturnPage: React.FC<StayReturnPageProps> = ({
     const handleReturnSubmit = async () => {
       if (!selectedRequest) return;
 
+      setLoading(true);
       try {
         const requestData = {
           sleepOut_dt: selectedRequest.date,
@@ -95,11 +100,16 @@ const StayReturnPage: React.FC<StayReturnPageProps> = ({
           )
         );
 
-        alert('외박 복귀가 완료되었습니다.');
-        setCurrentPage('menu');
+        setShowSuccessModal(true);
+        setSelectedRequest(null);
+        setReturnType('NORMAL');
+        setReturnNote('');
       } catch (error) {
         console.error('외박 복귀 처리 실패:', error);
-        alert('외박 복귀 처리 중 오류가 발생했습니다.');
+        setErrorMessage('외박 복귀 처리 중 오류가 발생했습니다.');
+        setShowErrorModal(true);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -166,7 +176,7 @@ const StayReturnPage: React.FC<StayReturnPageProps> = ({
 
         {/* 복귀 모달 */}
         {selectedRequest && (
-          <div className="modal fade show d-flex align-items-center justify-content-center" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0)' }}>
+          <div className="modal fade show d-flex align-items-center justify-content-center" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-sm" style={{ maxWidth: '300px', margin: '0' }}>
               <div className="modal-content" style={{ 
                 boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
@@ -188,10 +198,9 @@ const StayReturnPage: React.FC<StayReturnPageProps> = ({
                       value={returnType}
                       onChange={(e) => setReturnType(e.target.value)}
                     >
-                        <option value=""></option>
-                        <option value="복귀">복귀</option>
-                        <option value="외박">외박</option>
-                        <option value="기타">기타</option>
+                      <option value="NORMAL">정상 복귀</option>
+                      <option value="LATE">지연 복귀</option>
+                      <option value="OTHER">기타</option>
                     </select>
                   </div>
                   <div className="mb-3">
@@ -217,14 +226,75 @@ const StayReturnPage: React.FC<StayReturnPageProps> = ({
                     type="button" 
                     className="btn btn-info text-white"
                     onClick={handleReturnSubmit}
+                    disabled={loading}
                   >
-                    복귀 처리
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        처리 중...
+                      </>
+                    ) : '복귀 처리'}
                   </button>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* 성공 모달 */}
+        <div className={`modal fade ${showSuccessModal ? 'show' : ''}`} 
+             style={{ display: showSuccessModal ? 'block' : 'none' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">복귀 처리 완료</h5>
+                <button type="button" className="btn-close" onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentPage('menu');
+                }}></button>
+              </div>
+              <div className="modal-body text-center">
+                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>외박 복귀 처리가 완료되었습니다.</p>
+                <p className="text-muted mt-2">메뉴 페이지로 이동합니다.</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentPage('menu');
+                }}>
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {showSuccessModal && <div className="modal-backdrop fade show"></div>}
+
+        {/* 에러 모달 */}
+        <div className={`modal fade ${showErrorModal ? 'show' : ''}`} 
+             style={{ display: showErrorModal ? 'block' : 'none' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">오류 발생</h5>
+                <button type="button" className="btn-close" onClick={() => setShowErrorModal(false)}></button>
+              </div>
+              <div className="modal-body text-center">
+                <i className="bi bi-exclamation-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>{errorMessage}</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowErrorModal(false)}>
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {showErrorModal && <div className="modal-backdrop fade show"></div>}
       </div>
     );
   };

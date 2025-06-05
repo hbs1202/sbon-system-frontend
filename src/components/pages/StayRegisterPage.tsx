@@ -13,11 +13,16 @@ const StayRegisterPage: React.FC<StayRegisterPageProps> = ({
   setCurrentPage, 
   setStayRequests 
 }) => {
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
     
   // 학생 정보가 없으면 로그인 페이지로 리다이렉트
   useEffect(() => {
     if (!currentStudent) {
-      alert('로그인이 필요합니다.');
+      setErrorMessage('로그인이 필요합니다.');
+      setShowErrorModal(true);
       setCurrentPage('login');
     }
   }, [currentStudent, setCurrentPage]);
@@ -76,15 +81,18 @@ const StayRegisterPage: React.FC<StayRegisterPageProps> = ({
 
     const handleSubmit = async () => {
       if (!formData.date || !formData.time || !formData.returnDate || !formData.returnTime || !formData.reason) {
-        alert('모든 필수 항목을 입력해주세요.');
+        setErrorMessage('모든 필수 항목을 입력해주세요.');
+        setShowErrorModal(true);
         return;
       }
 
       if (!currentStudent?.Student_ID) {
-        alert('학생 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+        setErrorMessage('학생 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+        setShowErrorModal(true);
         return;
       }
 
+      setLoading(true);
       try {
         const requestData = {
           studentId: currentStudent.Student_ID,
@@ -110,11 +118,13 @@ const StayRegisterPage: React.FC<StayRegisterPageProps> = ({
         };
 
         setStayRequests(prev => [...prev, newRequest]);
-        alert('외박 신청이 완료되었습니다.');
-        setCurrentPage('menu');
+        setShowSuccessModal(true);
       } catch (error) {
         console.error('외박 신청 실패:', error);
-        alert('외박 신청 중 오류가 발생했습니다.');
+        setErrorMessage('외박 신청 중 오류가 발생했습니다.');
+        setShowErrorModal(true);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -212,11 +222,72 @@ const StayRegisterPage: React.FC<StayRegisterPageProps> = ({
               <button
                 className="btn btn-warning btn-lg w-100"
                 onClick={handleSubmit}
+                disabled={loading}
               >
-                신청하기
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2"></span>
+                    신청 중...
+                  </>
+                ) : '신청하기'}
               </button>
             </div>
           </div>
+
+          {/* 성공 모달 */}
+          <div className={`modal fade ${showSuccessModal ? 'show' : ''}`} 
+               style={{ display: showSuccessModal ? 'block' : 'none' }} 
+               tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">외박 신청 완료</h5>
+                  <button type="button" className="btn-close" onClick={() => {
+                    setShowSuccessModal(false);
+                    setCurrentPage('menu');
+                  }}></button>
+                </div>
+                <div className="modal-body text-center">
+                  <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+                  <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>외박 신청이 완료되었습니다.</p>
+                  <p className="text-muted mt-2">메뉴 페이지로 이동합니다.</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-primary" onClick={() => {
+                    setShowSuccessModal(false);
+                    setCurrentPage('menu');
+                  }}>
+                    확인
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {showSuccessModal && <div className="modal-backdrop fade show"></div>}
+
+          {/* 에러 모달 */}
+          <div className={`modal fade ${showErrorModal ? 'show' : ''}`} 
+               style={{ display: showErrorModal ? 'block' : 'none' }} 
+               tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">오류 발생</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowErrorModal(false)}></button>
+                </div>
+                <div className="modal-body text-center">
+                  <i className="bi bi-exclamation-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+                  <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>{errorMessage}</p>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowErrorModal(false)}>
+                    확인
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {showErrorModal && <div className="modal-backdrop fade show"></div>}
         </div>
       </div>
     );

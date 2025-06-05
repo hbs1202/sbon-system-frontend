@@ -5,7 +5,6 @@ import axios from 'axios';
 // API 엔드포인트 설정
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://port-0-sbon-system-backend-mbhiy4va1af0e6e0.sel4.cloudtype.app';
 
-
 interface OutingReturnResponse {
   message: string;
   data: {
@@ -20,7 +19,7 @@ interface OutingListResponse {
   Out_Dt: string;
   Out_Time: string;
   Out_Reason: string;
-  Return_Time?: string;  // 선택적 필드로 추가
+  Return_Time?: string;
 }
 
 interface OutingReturnPageProps {
@@ -40,6 +39,9 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<OutingRequest | null>(null);
   const [returnType, setReturnType] = useState('복귀');
   const [returnNote, setReturnNote] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // 외출 내역 가져오기
   const fetchOutingList = useCallback(async () => {
@@ -49,15 +51,8 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
     }
 
     try {
-      console.log('외출 내역 조회 시작:', {
-        studentId: currentStudent.Student_ID,
-        apiUrl: `${API_BASE_URL}/api/outing/list/${currentStudent.Student_ID}`
-      });
-
       setLoading(true);
       const response = await axios.get<OutingListResponse[]>(`${API_BASE_URL}/api/outing/list/${currentStudent.Student_ID}`);
-
-      console.log('외출 내역 API 응답:', response.data);
 
       if (!response.data || response.data.length === 0) {
         console.log('외출 내역이 없습니다.');
@@ -81,18 +76,11 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
         reason2_Name: ''
       }));
 
-      console.log('변환된 외출 내역:', formattedRequests);
       setOutingRequests(formattedRequests);
     } catch (error) {
       console.error('외출 내역 조회 실패:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('API 에러 상세:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
-      alert('외출 내역을 가져오는데 실패했습니다.');
+      setErrorMessage('외출 내역을 가져오는데 실패했습니다.');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -100,7 +88,8 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
 
   useEffect(() => {
     if (!currentStudent) {
-      alert('로그인이 필요합니다.');
+      setErrorMessage('로그인이 필요합니다.');
+      setShowErrorModal(true);
       setCurrentPage('login');
       return;
     }
@@ -108,33 +97,14 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
     fetchOutingList();
   }, [currentStudent, setCurrentPage, fetchOutingList]);
 
-  const handleReturn = async (request: OutingRequest) => {
-    try {
-      setLoading(true);
-      setSelectedRequest(request);
-      setReturnType('복귀');
-      setReturnNote('');
-    } catch (error) {
-      alert('외출 복귀 처리 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleReturn = async () => {
     if (!selectedRequest || !currentStudent?.Student_ID) {
-      alert('외출 정보를 찾을 수 없습니다.');
+      setErrorMessage('외출 정보를 찾을 수 없습니다.');
+      setShowErrorModal(true);
       return;
     }
 
     try {
-      console.log('외출 복귀 처리 시작:', {
-        outDate: selectedRequest.date,
-        seq: selectedRequest.seq,
-        returnType,
-        returnNote
-      });
-
       setLoading(true);
       const requestData = {
         outDate: selectedRequest.date,
@@ -148,8 +118,6 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
         requestData
       );
 
-      console.log('외출 복귀 API 응답:', response.data);
-
       if (response.data.message) {
         setOutingRequests(prev => 
           prev.map(request => 
@@ -159,21 +127,15 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
           )
         );
 
-        alert('외출 복귀가 완료되었습니다.');
+        setShowSuccessModal(true);
         setSelectedRequest(null);
         setReturnType('복귀');
         setReturnNote('');
       }
     } catch (error) {
       console.error('외출 복귀 처리 오류:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('API 에러 상세:', {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        });
-      }
-      alert('외출 복귀 처리 중 오류가 발생했습니다.');
+      setErrorMessage('외출 복귀 처리 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -184,25 +146,25 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
     request => request.studentId === currentStudent?.Student_ID
   );
 
-    return (
-      <div className="container-fluid vh-100 bg-light">
+  return (
+    <div className="container-fluid vh-100 bg-light">
       <div className="bg-primary text-white p-3 d-flex align-items-center">
-          <button 
-            className="btn btn-outline-light me-3"
-            onClick={() => setCurrentPage('menu')}
-          >
-            ←
-          </button>
-          <h4 className="mb-0">외출 복귀</h4>
-        </div>
+        <button 
+          className="btn btn-outline-light me-3"
+          onClick={() => setCurrentPage('menu')}
+        >
+          ←
+        </button>
+        <h4 className="mb-0">외출 복귀</h4>
+      </div>
 
-        <div className="p-4">
+      <div className="p-4">
         <div className="card mb-3">
           <div className="card-body">
             <h6 className="card-title">학생 정보</h6>
             <p className="mb-0">{currentStudent?.Student_Name} ({currentStudent?.Grade}학년)</p>
           </div>
-              </div>
+        </div>
 
         <div className="table-responsive">
           <table className="table table-hover">
@@ -224,7 +186,11 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
                     {request.status === 'pending' && (
                       <button
                         className="btn btn-primary btn-sm"
-                        onClick={() => handleReturn(request)}
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setReturnType('복귀');
+                          setReturnNote('');
+                        }}
                         disabled={loading}
                       >
                         복귀
@@ -242,42 +208,39 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
               )}
             </tbody>
           </table>
-            </div>
+        </div>
 
         {selectedRequest && (
-            <>
-            <div className="modal fade show d-flex align-items-center justify-content-center" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0)' }}>
-              <div className="modal-dialog modal-sm" style={{ maxWidth: '300px', margin: '0' }}>
-                <div className="modal-content" style={{ 
-                  boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
-                  border: 'none'
-                }}>
-                  <div className="modal-body pt-4">
-              <div className="mb-3">
-                      <label className="form-label">복귀유형</label>
-                <select
-                  className="form-select"
-                        value={returnType}
-                        onChange={(e) => setReturnType(e.target.value)}
-                >
-                        <option value=""></option>
-                        <option value="복귀">복귀</option>
-                        <option value="외박">외박</option>
-                        <option value="기타">기타</option>
-                </select>
-              </div>
-              <div className="mb-3">
-                      <label className="form-label">비고</label>
-                <input
-                        type="text"
-                  className="form-control"
-                        value={returnNote}
-                        onChange={(e) => setReturnNote(e.target.value)}
-                        placeholder="비고를 입력해주세요"
-                />
-              </div>
+          <div className="modal fade show d-flex align-items-center justify-content-center" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-sm" style={{ maxWidth: '300px', margin: '0' }}>
+              <div className="modal-content" style={{ 
+                boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+                border: 'none'
+              }}>
+                <div className="modal-body pt-4">
+                  <div className="mb-3">
+                    <label className="form-label">복귀유형</label>
+                    <select
+                      className="form-select"
+                      value={returnType}
+                      onChange={(e) => setReturnType(e.target.value)}
+                    >
+                      <option value="복귀">복귀</option>
+                      <option value="외박">외박</option>
+                      <option value="기타">기타</option>
+                    </select>
                   </div>
-                  <div className="modal-footer">
+                  <div className="mb-3">
+                    <label className="form-label">비고</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={returnNote}
+                      onChange={(e) => setReturnNote(e.target.value)}
+                      placeholder="비고를 입력해주세요"
+                    />
+                  </div>
+                  <div className="d-flex justify-content-end gap-2">
                     <button
                       type="button"
                       className="btn btn-secondary"
@@ -289,28 +252,83 @@ const OutingReturnPage: React.FC<OutingReturnPageProps> = ({
                     >
                       취소
                     </button>
-              <button
+                    <button
                       type="button"
                       className="btn btn-primary"
-                      onClick={handleSubmit}
+                      onClick={handleReturn}
                       disabled={loading}
-              >
+                    >
                       {loading ? (
                         <>
                           <span className="spinner-border spinner-border-sm me-2"></span>
-                          처리중...
+                          처리 중...
                         </>
                       ) : '확인'}
-              </button>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-            </>
-          )}
+          </div>
+        )}
+
+        {/* 성공 모달 */}
+        <div className={`modal fade ${showSuccessModal ? 'show' : ''}`} 
+             style={{ display: showSuccessModal ? 'block' : 'none' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">복귀 처리 완료</h5>
+                <button type="button" className="btn-close" onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentPage('menu');
+                }}></button>
+              </div>
+              <div className="modal-body text-center">
+                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>외출 복귀 처리가 완료되었습니다.</p>
+                <p className="text-muted mt-2">메뉴 페이지로 이동합니다.</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentPage('menu');
+                }}>
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+        {showSuccessModal && <div className="modal-backdrop fade show"></div>}
+
+        {/* 에러 모달 */}
+        <div className={`modal fade ${showErrorModal ? 'show' : ''}`} 
+             style={{ display: showErrorModal ? 'block' : 'none' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">오류 발생</h5>
+                <button type="button" className="btn-close" onClick={() => setShowErrorModal(false)}></button>
+              </div>
+              <div className="modal-body text-center">
+                <i className="bi bi-exclamation-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>{errorMessage}</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowErrorModal(false)}>
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {showErrorModal && <div className="modal-backdrop fade show"></div>}
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 export default OutingReturnPage;
