@@ -55,6 +55,9 @@ const OutingRegisterPage: React.FC<OutingRegisterPageProps> = ({ currentStudent,
     const [loading, setLoading] = useState(false);
     const [outingReasons1, setOutingReasons1] = useState<OutingReason[]>([]);
     const [outingReasons2, setOutingReasons2] = useState<OutingReason[]>([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     // 외출사유 데이터 가져오기
     useEffect(() => {
@@ -156,15 +159,15 @@ const OutingRegisterPage: React.FC<OutingRegisterPageProps> = ({ currentStudent,
           studentId: currentStudent.Student_ID,
           ...formData,
           status: 'pending',
-          seq: 0,  // 임시값으로 0 설정
-          actualReturnTime: undefined  // 외출 신청 시에는 아직 반납 시간이 없으므로 undefined로 설정
+          seq: 0,
+          actualReturnTime: undefined
         };
 
         setOutingRequests(prev => [...prev, newRequest]);
-        alert('외출 신청이 완료되었습니다.');
-        setCurrentPage('menu');
+        setShowSuccessModal(true);
       } catch (error) {
-        alert('외출 신청 중 오류가 발생했습니다.');
+        setErrorMessage('외출 신청 중 오류가 발생했습니다.');
+        setShowErrorModal(true);
       } finally {
         setLoading(false);
       }
@@ -303,6 +306,61 @@ const OutingRegisterPage: React.FC<OutingRegisterPageProps> = ({ currentStudent,
             </div>
           </div>
         </div>
+
+        {/* 성공 모달 */}
+        <div className={`modal fade ${showSuccessModal ? 'show' : ''}`} 
+             style={{ display: showSuccessModal ? 'block' : 'none' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">외출 신청 완료</h5>
+                <button type="button" className="btn-close" onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentPage('menu');
+                }}></button>
+              </div>
+              <div className="modal-body text-center">
+                <i className="bi bi-check-circle-fill text-success" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>외출 신청이 완료되었습니다.</p>
+                <p className="text-muted mt-2">메뉴 페이지로 이동합니다.</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={() => {
+                  setShowSuccessModal(false);
+                  setCurrentPage('menu');
+                }}>
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {showSuccessModal && <div className="modal-backdrop fade show"></div>}
+
+        {/* 에러 모달 */}
+        <div className={`modal fade ${showErrorModal ? 'show' : ''}`} 
+             style={{ display: showErrorModal ? 'block' : 'none' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">오류 발생</h5>
+                <button type="button" className="btn-close" onClick={() => setShowErrorModal(false)}></button>
+              </div>
+              <div className="modal-body text-center">
+                <i className="bi bi-exclamation-circle-fill text-danger" style={{ fontSize: '3rem' }}></i>
+                <p className="mt-3 mb-0" style={{ fontSize: '1.2rem' }}>{errorMessage}</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowErrorModal(false)}>
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {showErrorModal && <div className="modal-backdrop fade show"></div>}
       </div>
     );
   };
